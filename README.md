@@ -2,7 +2,9 @@
 
 Spotify stays open, then the part that draws the window dies. The song can keep going. Album art, the canvas, or a music video drops out. It comes back, then dies again.
 
-This is a note from one Omarchy machine in October 2026. The setting below stopped the crash there. It is not an official Spotify or Omarchy fix.
+This is a note from one Omarchy machine in October 2026. It is not an official Spotify or Omarchy fix.
+
+The better fix is to run Spotify as a Wayland app, same as the rest of the desktop. That keeps the graphics chip. Turning the graphics chip off also stops the crash, and that is the one confirmed on this machine. Use it if Wayland mode looks wrong.
 
 ## Fix
 
@@ -12,17 +14,30 @@ Create this file:
 
 `~/.config/spotify-flags.conf`
 
-Put this line in it, with nothing else:
+Put these lines in it:
+
+```
+--enable-features=UseOzonePlatform,WaylandWindowDecorations
+--ozone-platform=wayland
+```
+
+Open Spotify from the app menu.
+
+The Arch Spotify launcher reads that file on every start. Spotify's drawing helper then starts in Wayland mode instead of X11 mode, so the display it hands the graphics library is a real Wayland display. People with this same crash on Arch, including the Mesa stack described below, reported that the helper starts cleanly with these lines.
+
+Check the window. On an older Spotify, Omarchy's maintainer found the Wayland layout too wide. That was a different version. If this one looks wrong, replace the file with the fallback below.
+
+To undo either setting, delete `~/.config/spotify-flags.conf` and open Spotify again.
+
+### If Wayland mode looks wrong
+
+Use this single line instead:
 
 ```
 --disable-gpu
 ```
 
-Open Spotify from the app menu.
-
-The Arch Spotify launcher reads that file on every start and passes the line through. Spotify then draws the window in software instead of using the graphics chip. The drawing helper still starts, but it is told not to use the chip (`--use-gl=disabled`). On the machine this was tried on, that copy stayed up and playback looked normal.
-
-The cost is that pictures and video use more of the processor. If you would rather have the old behavior, delete `~/.config/spotify-flags.conf` and open Spotify again.
+Spotify then draws the window in software. The drawing helper still starts, but it is told not to use the graphics chip (`--use-gl=disabled`). On this Omarchy machine, that copy stayed up and playback looked normal. Pictures and video use more of the processor. This is the backup, not the one to keep after Spotify fixes the app. A later Spotify can also refuse to start when this line is set.
 
 ## Why it crashes
 
@@ -47,7 +62,7 @@ Your songs and playlists are in your Spotify account. This crash does not delete
 
 A personal launcher that set `EGL_PLATFORM=x11` did reach the main Spotify process. It did not reach the drawing helper. Spotify clears the environment before that helper starts. The helper crashed again within half a minute, on the same Wayland lock.
 
-Forcing Spotify onto Wayland with `--ozone-platform=wayland` is a different workaround other people have used for scaling. It was not the one tested here. Omarchy's maintainer has also found Spotify's Wayland layout too wide to be worth it for everyday use.
+There is no newer Spotify to install. 1.3.4.258 is still the current package, and that is the version that introduced the crash.
 
 ## This is Spotify's bug
 
